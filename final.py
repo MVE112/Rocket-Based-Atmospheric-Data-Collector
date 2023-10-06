@@ -1,5 +1,6 @@
 # Made by: Miguel Velasco Espinosa
 
+
 from adafruit_bme280 import basic as adafruit_bme280
 import board
 import time
@@ -7,6 +8,7 @@ import datetime
 import pymysql
 i2c = board.I2C()
 bme280 = adafruit_bme280.Adafruit_BME280_I2C(i2c)
+#This area of the code until the connection to the database is specifically to calculate accelerations and Gs with the H3LIS331DL
 import smbus
 import RPi.GPIO as GPIO
 import time,os
@@ -76,12 +78,13 @@ def readAxes(addr):
     y = ~y
     z = ~z
     return x,y,z
-def convertToG(maxScale, xAcc1, yAcc1, zAcc1):
+    
+def convertToG(maxScale, xAcc1, yAcc1, zAcc1): #Converts the values taken to Gs however when testing the Z direction would always be in the negative direction and would have one more than it should
     X = (2*float(maxScale) * float(xAcc1))/(2**16);
     Y = (2*float(maxScale) * float(yAcc1))/(2**16);
-    Z = -1*((2*float(maxScale) * float(zAcc1))/(2**16))-1;
+    Z = -1*((2*float(maxScale) * float(zAcc1))/(2**16))-1; #Fixed the issue with the Z direction.
     return X, Y, Z
-def convertToA(maxScale, x, y, z):
+def convertToA(maxScale, x, y, z): #Converts to Acceleration
     A = abs(x) * 9.81
     B = abs(y) * 9.81
     C = abs(z) * 9.81
@@ -117,7 +120,7 @@ def acc():
     if(u >= i and u >= h):
         return u * 0.146
 db = pymysql.connect(host="localhost",user="newuser",password="newuserpassword",database="RaspberryPi")
-
+# This is where the values from the bme280 are passed into the maria database.
 RD = """INSERT INTO ROCKETDATAC (date_YYYY_MM_DD,time_HH_MM_SS,temp_C,humidity_percent,pressure_hPa,altitude_Meters,launch_force_N) values(%s,%s,%s,%s,%s,%s,%s);"""
 cursor = db.cursor()
 while True:
